@@ -12,10 +12,14 @@ import hmac
 import hashlib
 import time
 from threading import Thread
+import logging
 from websocket import create_connection, WebSocketConnectionClosedException
 from pymongo import MongoClient
 from gdax.gdax_auth import get_auth_headers
 
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class WebsocketClient(object):
     def __init__(self, url="wss://ws-feed.gdax.com", products=None, message_type="subscribe", mongo_collection=None,
@@ -26,6 +30,7 @@ class WebsocketClient(object):
         self.type = message_type
         self.stop = False
         self.error = None
+        self.num_errors = 0
         self.ws = None
         self.thread = None
         self.auth = auth
@@ -114,12 +119,10 @@ class WebsocketClient(object):
         self.thread.join()
 
     def on_open(self):
-        if self.should_print:
-            print("-- Subscribed! --\n")
+        logger.info("-- Subscribed! --\n")
 
     def on_close(self):
-        if self.should_print:
-            print("\n-- Socket Closed --")
+        logger.info("\n-- Socket Closed --")
 
     def on_message(self, msg):
         if self.should_print:
@@ -129,8 +132,10 @@ class WebsocketClient(object):
 
     def on_error(self, e, data=None):
         self.error = e
-        self.stop = True
-        print('{} - data: {}'.format(e, data))
+        logger.error('{} - data: {}'.format(e, data))
+        self.num_errors += 1
+        if self.num_errors > 100:
+            self.stop = True
 
 
 if __name__ == "__main__":
