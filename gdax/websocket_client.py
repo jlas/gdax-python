@@ -119,10 +119,10 @@ class WebsocketClient(object):
         self.thread.join()
 
     def on_open(self):
-        logger.info("-- Subscribed! --\n")
+        logger.info("-- Subscribed! --")
 
     def on_close(self):
-        logger.info("\n-- Socket Closed --")
+        logger.info("-- Socket Closed --")
 
     def on_message(self, msg):
         if self.should_print:
@@ -134,8 +134,10 @@ class WebsocketClient(object):
         self.error = e
         logger.error('{} - data: {}'.format(e, data))
         self.num_errors += 1
-        if self.num_errors > 100:
-            self.stop = True
+        if self.num_errors > 20:
+            logger.info('Error limit reached, re-establishing connection')
+            self.close()
+            self.open()
 
 
 if __name__ == "__main__":
